@@ -9,6 +9,7 @@ except ModuleNotFoundError:
 
 
 if platform != "win32":
+    print("You are not on Windows")
     exit()
 
 try:
@@ -16,10 +17,10 @@ try:
     filepath_downloads = f"{home}\Downloads"
     os.chdir(filepath_downloads)
 except FileNotFoundError:
-    print("Zły folder")
+    print("Wrong directory")
     exit()
 except:
-    print("Inny błąd")
+    print("Other error")
     exit()
 
 for file in os.listdir(filepath_downloads):
@@ -28,4 +29,4 @@ for file in os.listdir(filepath_downloads):
 try:
     winshell.recycle_bin().empty(confirm=False, show_progress=False, sound=False)
 except:
-    print("Pusty kosz")
+    print("The bin is empty")
