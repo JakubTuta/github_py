@@ -275,23 +275,26 @@ def draw(liczby):
 
 def main():
     wybor = var.get()
-
-    if wybor == "bubble":
-        szybszy_bubble_sort()
-    elif wybor == "insertion":
-        insertion_sort()
-    elif wybor == "selection":
-        selection_sort()
-    elif wybor == "bogo":
-        bogo_sort()
-    elif wybor == "shaker":
-        shaker_sort()
-    elif wybor == "quick":
-        quick_sort(liczby, 0, ILOSC_LICZB - 1)
-    elif wybor == "comb":
-        comb_sort()
-    elif wybor == "radix":
-        radix_sort()
+    
+    match wybor:
+        case "bubble":
+            szybszy_bubble_sort()
+        case "insertion":
+            insertion_sort()
+        case "selection":
+            selection_sort()
+        case "bogo":
+            bogo_sort()
+        case "shaker":
+            shaker_sort()
+        case "quick":
+            quick_sort(liczby, 0, ILOSC_LICZB - 1)
+        case "comb":
+            comb_sort()
+        case "radix":
+            radix_sort()
+        case _:
+            pygame.quit()
     
     draw(liczby)
     pygame.display.update()
