@@ -100,9 +100,7 @@ def szybszy_bubble_sort():
         for j in range(ILOSC_LICZB - i - 1):
             if liczby[j] > liczby[j+1]:
                 czy = 1
-                pom = liczby[j]
-                liczby[j] = liczby[j+1]
-                liczby[j+1] = pom
+                liczby[j], liczby[j+1] = liczby[j+1], liczby[j]
 
                 draw(liczby)
                 x = BLOK_X * (j + 1)
@@ -205,28 +203,26 @@ def shaker_sort():
 
 
 def comb_sort():
-    def getNextGap(gap):
-        gap = (gap * 10)//13
-        if gap < 1:
-            return 1
-        return gap
-
-    n = ILOSC_LICZB
-    gap = ILOSC_LICZB
-
-    swapped = True
-    while not gap or swapped:
-        gap = getNextGap(gap)
-        swapped = quick_sort
-
-        for i in range(0, n - gap):
+    gap = len(liczby)
+    shrink = 1.3
+    sorted = False
+    
+    while not sorted:
+        gap = int(gap / shrink)
+        if gap <= 1:
+            gap = 1
+            sorted = True
+        
+        i = 0
+        while i + gap < len(liczby):
             if liczby[i] > liczby[i + gap]:
                 liczby[i], liczby[i + gap] = liczby[i + gap], liczby[i]
-                swapped = True
-
-                draw(liczby)
-                pygame.display.update()
-                sleep(DELAY)
+                sorted = False
+            i += 1
+            
+            draw(liczby)
+            pygame.display.update()
+            sleep(DELAY // 2)
 
 
 def radix_sort():
