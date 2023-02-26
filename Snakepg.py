@@ -25,7 +25,7 @@ class Snake:
     
     def draw(self, WIN):
         for x, y in self.snakeParts:
-            pygame.draw.rect(WIN, GREEN, (x * DIMENSIONS, y * DIMENSIONS, DIMENSIONS-1, DIMENSIONS-1))
+            pygame.draw.rect(WIN, GREEN, (x * DIMENSIONS, y * DIMENSIONS, DIMENSIONS, DIMENSIONS))
     
     def getBigger(self):
         self.snakeParts.append([self.snakeParts[-1][0], self.snakeParts[-1][1]])
@@ -85,13 +85,13 @@ def check_collision(snake, apple):
         if (x, y) == (cordX, cordY):
             return 2
     
-    if x == -1:
+    if x < 0:
         snake.snakeParts[0][0] = ROW - 1
-    elif x == ROW:
+    elif x >= ROW:
         snake.snakeParts[0][0] = 0
-    elif y == -1:
+    elif y < 0:
         snake.snakeParts[0][1] = ROW - 1
-    elif y == ROW:
+    elif y >= ROW:
         snake.snakeParts[0][1] = 0
 
 
