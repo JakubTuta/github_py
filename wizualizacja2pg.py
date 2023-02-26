@@ -12,14 +12,12 @@ def zamknij(odpowiedz):
 
     global ILOSC_LICZB
     try:
-        idk = int(odpowiedz)
+        ILOSC_LICZB = int(odpowiedz)
     except TypeError:
         return
-    else:
-        if 0 < idk <= 512:
-            ILOSC_LICZB = idk
-        else:
-            return
+    
+    if ILOSC_LICZB < 1 or ILOSC_LICZB > 512:
+        return
 
     top.destroy()
 
