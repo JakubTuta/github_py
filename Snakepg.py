@@ -7,7 +7,7 @@ DIRECTION = "right"
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 WHITE = (255, 255, 255)
-ROW = 25
+ROW = 20
 DIMENSIONS = WIDTH // ROW
 
 pygame.init()
