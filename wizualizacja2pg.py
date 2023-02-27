@@ -110,7 +110,7 @@ def szybszy_bubble_sort():
                 pygame.display.update()
                 sleep(DELAY)
 
-        if swapped:
+        if not swapped:
             break
 
 
