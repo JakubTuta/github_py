@@ -94,10 +94,10 @@ def quick_sort(liczby, low, high):
 
 def szybszy_bubble_sort():
     for i in range(ILOSC_LICZB - 1):
-        czy = 0
+        swapped = False
         for j in range(ILOSC_LICZB - i - 1):
             if liczby[j] > liczby[j+1]:
-                czy = 1
+                swapped = True
                 liczby[j], liczby[j+1] = liczby[j+1], liczby[j]
 
                 draw(liczby)
@@ -110,7 +110,7 @@ def szybszy_bubble_sort():
                 pygame.display.update()
                 sleep(DELAY)
 
-        if czy == 0:
+        if swapped:
             break
 
 
