@@ -134,11 +134,8 @@ def insertion_sort():
 
 
 def selection_sort():
-    minimum = MAX_WARTOSC + 1
     for i in range(0, ILOSC_LICZB):
-        for j in range(i, ILOSC_LICZB):
-            if liczby[j] < minimum:
-                minimum = liczby[j]
+        minimum = min(liczby[i:ILOSC_LICZB])
 
         for j in range(i, ILOSC_LICZB):
             if liczby[j] == minimum:
