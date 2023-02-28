@@ -185,14 +185,14 @@ def shaker_sort():
                 swap = True
 
         if(swap == False):
-            end = end-1
+            end -= 1
 
         for a in range(end - 1, start - 1, -1):
             if(liczby[a] > liczby[a+1]):
                 liczby[a], liczby[a+1] = liczby[a+1], liczby[a]
                 swap = True
 
-        start = start + 1
+        start += 1
 
 
 def comb_sort():
