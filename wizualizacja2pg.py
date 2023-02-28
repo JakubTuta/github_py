@@ -151,8 +151,6 @@ def selection_sort():
 
                 sleep(DELAY)
 
-        minimum = MAX_WARTOSC + 1
-
 
 def bogo_sort():
     def posortowane():
