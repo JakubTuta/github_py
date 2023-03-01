@@ -8,6 +8,7 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 GRAY = (100, 100, 100)
 
+
 def zamknij(odpowiedz):
 
     global ILOSC_LICZB
@@ -202,7 +203,7 @@ def comb_sort():
     
     while not sorted:
         gap = int(gap / shrink)
-        if gap <= 1:
+        if gap < 1:
             gap = 1
             sorted = True
         
