@@ -20,15 +20,23 @@ RED = (255, 0, 0)
 pygame.init()
 
 
-# class Vertex:
-#     def __init__(self,x_coord,y_coord):
-#         self.x = x_coord
-#         self.y = y_coord
-#         self.distance = float('inf')
-#         self.parent_x = None
-#         self.parent_y = None
-#         self.processed = False
-#         self.index_in_queue = None
+class Vertex:
+    def __init__(self, pos):
+        self.x = pos[0]
+        self.y = pos[1]
+        self.dist = 1000
+        self.visited = False
+        self.parent = None
+        self.edges = []
+
+    def __lt__(self, other):
+        return self.dist < other.dist
+    
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+    
+    def add_edge(self, edge):
+        self.edges.append(edge)
 
 
 def settings():
@@ -327,11 +335,107 @@ def depth_first_search_only_result(WIN, board, start_pos, end_pos):
 
 
 def dijkstra_search(WIN, clock, board, start_pos, end_pos):
-    pass
+    def find_edges(board, vertex):
+        edges = []
+        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            x = vertex.x + dx
+            y = vertex.y + dy
+            if 0 <= x < len(board[0]) and 0 <= y < len(board) and board[y][x] != '#':
+                edges.append((x, y))
+        return [vertices[y][x] for x, y in edges]
+    
+    rows, cols = len(board), len(board[0])
+    vertices = [[Vertex((x, y)) for x in range(cols)] for y in range(rows)]
+    
+    for row in vertices:
+        for col in row:
+            col.edges = find_edges(board, col)
+    
+    start_vertex = vertices[start_pos[1]][start_pos[0]]
+    start_vertex.dist = 0
+    end_vertex = vertices[end_pos[1]][end_pos[0]]
+    
+    pq = queue.PriorityQueue()
+    pq.put(start_vertex)
+    
+    path = []
+    was_here = []
+    while not pq.empty():
+        current = pq.get()
+        if current.visited:
+            continue
+        
+        was_here.append((current.x, current.y))
+        
+        current.visited = True
+        if current == end_vertex:
+            while current.parent:
+                path.append((current.x, current.y))
+                current = current.parent
+            path.append((current.x, current.y))
+            break
+        
+        for neighbor in current.edges:
+            new_dist = current.dist + abs(current.x - neighbor.x) + abs(current.y - neighbor.y)
+            if new_dist < neighbor.dist:
+                neighbor.dist = new_dist
+                neighbor.parent = current
+                pq.put(neighbor)
+        
+        clock.tick(FPS)
+        main_draw(WIN, board, [], was_here)
+    main_draw(WIN, board, path, was_here)
 
 
 def dijkstra_search_only_result(WIN, board, start_pos, end_pos):
-    pass
+    def find_edges(board, vertex):
+        edges = []
+        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            x = vertex.x + dx
+            y = vertex.y + dy
+            if 0 <= x < len(board[0]) and 0 <= y < len(board) and board[y][x] != '#':
+                edges.append((x, y))
+        return [vertices[y][x] for x, y in edges]
+    
+    rows, cols = len(board), len(board[0])
+    vertices = [[Vertex((x, y)) for x in range(cols)] for y in range(rows)]
+    
+    for row in vertices:
+        for col in row:
+            col.edges = find_edges(board, col)
+    
+    start_vertex = vertices[start_pos[1]][start_pos[0]]
+    start_vertex.dist = 0
+    end_vertex = vertices[end_pos[1]][end_pos[0]]
+    
+    pq = queue.PriorityQueue()
+    pq.put(start_vertex)
+    
+    path = []
+    was_here = []
+    while not pq.empty():
+        current = pq.get()
+        if current.visited:
+            continue
+        
+        was_here.append((current.x, current.y))
+        
+        current.visited = True
+        if current == end_vertex:
+            while current.parent:
+                path.append((current.x, current.y))
+                current = current.parent
+            path.append((current.x, current.y))
+            break
+        
+        for neighbor in current.edges:
+            new_dist = current.dist + abs(current.x - neighbor.x) + abs(current.y - neighbor.y)
+            if new_dist < neighbor.dist:
+                neighbor.dist = new_dist
+                neighbor.parent = current
+                pq.put(neighbor)
+
+    main_draw(WIN, board, path, was_here)
 
 
 def a_star_search(WIN, clock, board, start_pos, end_pos):
@@ -417,6 +521,8 @@ def main():
         pygame.display.update()
     
     # the main program
+    main_draw(WIN, board, [], [])
+    
     # First In Last Out
     if SETTINGS["chooseAlgorithm"] == "breadth first":
         if SETTINGS["showProcess"]:
