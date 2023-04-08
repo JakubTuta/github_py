@@ -2,6 +2,8 @@ import tkinter as tk
 import pygame
 from random import choices, randint
 import queue
+import heapq
+from math import sqrt
 
 SETTINGS = {}
 FPS = 60
@@ -20,11 +22,11 @@ RED = (255, 0, 0)
 pygame.init()
 
 
-class Vertex:
+class DijkstraVertex:
     def __init__(self, pos):
         self.x = pos[0]
         self.y = pos[1]
-        self.dist = 1000
+        self.dist = float('inf')
         self.visited = False
         self.parent = None
         self.edges = []
@@ -34,9 +36,26 @@ class Vertex:
     
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
+
+
+class AstarVertex:
+    def __init__(self, pos):
+        self.x = pos[0]
+        self.y = pos[1]
+        self.edges = []
+        self.distance = float('inf')
+        self.heuristic = 0
+        self.visited = False
+        self.parent = None
+        
+    def set_heuristic(self, goal):
+        self.heuristic = sqrt((self.x - goal.x) ** 2 + (self.y - goal.y) ** 2)
+
+    def __lt__(self, other):
+        return self.distance + self.heuristic < other.distance + other.heuristic
     
-    def add_edge(self, edge):
-        self.edges.append(edge)
+    def __eq__(self, other):
+        return (self.x, self.y) == (other.x, other.y)
 
 
 def settings():
@@ -47,7 +66,7 @@ def settings():
         except ValueError:
             return
         else:
-            if width < 2 or height < 2:
+            if width < 4 or height < 4:
                 return
         
         SETTINGS["width"] = width
@@ -88,11 +107,12 @@ def settings():
     tk.Radiobutton(root, text="Just show me end result", variable=showProcessVar, value=False, font=smaller_font).grid(row=10, column=0, padx=10, pady=10, sticky=tk.W)
     
     tk.Label(text="Would you like to draw your own maze?", font=main_font).grid(row=11, column=0, padx=10, pady=10, columnspan=2, sticky=tk.W)
-    drawMazeVar = tk.BooleanVar(value=True) # False - randomize maze, True - draw maze
-    tk.Radiobutton(root, text="Let me draw the maze", variable=drawMazeVar, value=True, font=smaller_font).grid(row=12, column=0, padx=10, pady=10, sticky=tk.W)
-    tk.Radiobutton(root, text="Randomize the maze", variable=drawMazeVar, value=False, font=smaller_font).grid(row=13, column=0, padx=10, pady=10, sticky=tk.W)
+    drawMazeVar = tk.StringVar(value="randomize") # randomize - random maze, draw - user draws the maze, file - random maze from a file
+    tk.Radiobutton(root, text="Randomize the maze", variable=drawMazeVar, value="randomize", font=smaller_font).grid(row=12, column=0, padx=10, pady=10, sticky=tk.W)
+    tk.Radiobutton(root, text="Let me draw the maze", variable=drawMazeVar, value="draw", font=smaller_font).grid(row=13, column=0, padx=10, pady=10, sticky=tk.W)
+    tk.Radiobutton(root, text="Choose a random maze from file", variable=drawMazeVar, value="file", font=smaller_font).grid(row=14, column=0, padx=10, pady=10, sticky=tk.W)
 
-    tk.Button(text="Start", font=main_font, command=lambda: start_algorithm(root, widthEntry.get(), heightEntry.get(), showProcessVar.get(), chooseAlgorithmVar.get(), drawMazeVar.get())).grid(row=14, column=0, columnspan=2, padx=10, pady=10, ipadx=30, ipady=10)
+    tk.Button(text="Start", font=main_font, command=lambda: start_algorithm(root, widthEntry.get(), heightEntry.get(), showProcessVar.get(), chooseAlgorithmVar.get(), drawMazeVar.get())).grid(row=15, column=0, columnspan=2, padx=10, pady=10, ipadx=30, ipady=10)
 
     root.mainloop()
 
@@ -171,6 +191,8 @@ def main_draw(WIN, board, path, was_here):
                 color = WALL_TILE_COLOR
             elif col == 'X':
                 color = RED
+            elif col == 'O':
+                color = GREEN
             else:
                 color = TILE_COLOR
             
@@ -188,17 +210,13 @@ def main_draw(WIN, board, path, was_here):
 def find_neighbors(board, x, y):
     neighbors = []
     
-    if board[y-1][x] != '#':
-        neighbors.append((x, y-1))
+    possibleMoves = [(0, 1), (1, 0), (0, -1), (-1, 0)]
     
-    if board[y][x+1] != '#':
-        neighbors.append((x+1, y))
-    
-    if board[y+1][x] != '#':
-        neighbors.append((x, y+1))
-    
-    if board[y][x-1] != '#':
-        neighbors.append((x-1, y))
+    for dx, dy in possibleMoves:
+        newX = x + dx
+        newY = y + dy
+        if board[newY][newX] != '#':
+            neighbors.append((newX, newY))
     
     return neighbors
 
@@ -334,22 +352,23 @@ def depth_first_search_only_result(WIN, board, start_pos, end_pos):
     main_draw(WIN, board, path, was_here)
 
 
+def find_edges(board, vertices, vertex):
+    edges = []
+    for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+        x = vertex.x + dx
+        y = vertex.y + dy
+        if 0 <= x < len(board[0]) and 0 <= y < len(board) and board[y][x] != '#':
+            edges.append((x, y))
+    return [vertices[y][x] for x, y in edges]
+
+
 def dijkstra_search(WIN, clock, board, start_pos, end_pos):
-    def find_edges(board, vertex):
-        edges = []
-        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            x = vertex.x + dx
-            y = vertex.y + dy
-            if 0 <= x < len(board[0]) and 0 <= y < len(board) and board[y][x] != '#':
-                edges.append((x, y))
-        return [vertices[y][x] for x, y in edges]
-    
     rows, cols = len(board), len(board[0])
-    vertices = [[Vertex((x, y)) for x in range(cols)] for y in range(rows)]
+    vertices = [[DijkstraVertex((x, y)) for x in range(cols)] for y in range(rows)]
     
     for row in vertices:
         for col in row:
-            col.edges = find_edges(board, col)
+            col.edges = find_edges(board, vertices, col)
     
     start_vertex = vertices[start_pos[1]][start_pos[0]]
     start_vertex.dist = 0
@@ -358,16 +377,17 @@ def dijkstra_search(WIN, clock, board, start_pos, end_pos):
     pq = queue.PriorityQueue()
     pq.put(start_vertex)
     
-    path = []
-    was_here = []
+    path = [start_pos]
+    was_here = [start_pos]
     while not pq.empty():
         current = pq.get()
+        
         if current.visited:
             continue
+        current.visited = True
         
         was_here.append((current.x, current.y))
         
-        current.visited = True
         if current == end_vertex:
             while current.parent:
                 path.append((current.x, current.y))
@@ -376,7 +396,7 @@ def dijkstra_search(WIN, clock, board, start_pos, end_pos):
             break
         
         for neighbor in current.edges:
-            new_dist = current.dist + abs(current.x - neighbor.x) + abs(current.y - neighbor.y)
+            new_dist = current.dist + 1
             if new_dist < neighbor.dist:
                 neighbor.dist = new_dist
                 neighbor.parent = current
@@ -388,21 +408,12 @@ def dijkstra_search(WIN, clock, board, start_pos, end_pos):
 
 
 def dijkstra_search_only_result(WIN, board, start_pos, end_pos):
-    def find_edges(board, vertex):
-        edges = []
-        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            x = vertex.x + dx
-            y = vertex.y + dy
-            if 0 <= x < len(board[0]) and 0 <= y < len(board) and board[y][x] != '#':
-                edges.append((x, y))
-        return [vertices[y][x] for x, y in edges]
-    
     rows, cols = len(board), len(board[0])
-    vertices = [[Vertex((x, y)) for x in range(cols)] for y in range(rows)]
+    vertices = [[DijkstraVertex((x, y)) for x in range(cols)] for y in range(rows)]
     
     for row in vertices:
         for col in row:
-            col.edges = find_edges(board, col)
+            col.edges = find_edges(board, vertices, col)
     
     start_vertex = vertices[start_pos[1]][start_pos[0]]
     start_vertex.dist = 0
@@ -411,16 +422,17 @@ def dijkstra_search_only_result(WIN, board, start_pos, end_pos):
     pq = queue.PriorityQueue()
     pq.put(start_vertex)
     
-    path = []
-    was_here = []
+    path = [start_pos]
+    was_here = [start_pos]
     while not pq.empty():
         current = pq.get()
+        
         if current.visited:
             continue
+        current.visited = True
         
         was_here.append((current.x, current.y))
         
-        current.visited = True
         if current == end_vertex:
             while current.parent:
                 path.append((current.x, current.y))
@@ -429,7 +441,7 @@ def dijkstra_search_only_result(WIN, board, start_pos, end_pos):
             break
         
         for neighbor in current.edges:
-            new_dist = current.dist + abs(current.x - neighbor.x) + abs(current.y - neighbor.y)
+            new_dist = current.dist + 1
             if new_dist < neighbor.dist:
                 neighbor.dist = new_dist
                 neighbor.parent = current
@@ -439,11 +451,95 @@ def dijkstra_search_only_result(WIN, board, start_pos, end_pos):
 
 
 def a_star_search(WIN, clock, board, start_pos, end_pos):
-    pass
+    rows, cols = len(board), len(board[0])
+    vertices = [[AstarVertex((x, y)) for x in range(cols)] for y in range(rows)]
+    
+    startVertex = vertices[start_pos[1]][start_pos[0]]
+    startVertex.distance = 0
+    endVertex = vertices[end_pos[1]][end_pos[0]]
+    
+    for row in vertices:
+        for col in row:
+            col.edges = find_edges(board, vertices, col)
+            col.set_heuristic(endVertex)
+    
+    heap = []
+    heapq.heappush(heap, startVertex)
+    path = []
+    was_here = []
+    
+    while heap:
+        current = heapq.heappop(heap)
+        
+        if current.visited:
+            continue
+        current.visited = True
+        
+        was_here.append((current.x, current.y))
+        
+        if current == endVertex:
+            while current:
+                path.append((current.x, current.y))
+                current = current.parent
+            break
+        
+        for edge in current.edges:
+            cost = current.distance + 1
+            heuristic = edge.heuristic
+            if cost < edge.distance:
+                edge.distance = cost
+                edge.parent = current
+                edge.heuristic = heuristic
+                heapq.heappush(heap, edge)
+        
+        clock.tick(FPS)
+        main_draw(WIN, board, [], was_here)
+    main_draw(WIN, board, path, was_here)
 
 
 def a_star_search_only_result(WIN, board, start_pos, end_pos):
-    pass
+    rows, cols = len(board), len(board[0])
+    vertices = [[AstarVertex((x, y)) for x in range(cols)] for y in range(rows)]
+    
+    startVertex = vertices[start_pos[1]][start_pos[0]]
+    startVertex.distance = 0
+    endVertex = vertices[end_pos[1]][end_pos[0]]
+    
+    for row in vertices:
+        for col in row:
+            col.edges = find_edges(board, vertices, col)
+            col.set_heuristic(endVertex)
+    
+    heap = []
+    heapq.heappush(heap, startVertex)
+    path = []
+    was_here = []
+    
+    while heap:
+        current = heapq.heappop(heap)
+        
+        if current.visited:
+            continue
+        current.visited = True
+        
+        was_here.append((current.x, current.y))
+        
+        if current == endVertex:
+            while current:
+                path.append((current.x, current.y))
+                current = current.parent
+            break
+        
+        for edge in current.edges:
+            cost = current.distance + 1
+            heuristic = edge.heuristic
+            if cost < edge.distance:
+                edge.distance = cost
+                edge.parent = current
+                edge.heuristic = heuristic
+                heapq.heappush(heap, edge)
+                
+    main_draw(WIN, board, path, was_here)
 
 
 def main():
