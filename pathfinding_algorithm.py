@@ -232,14 +232,13 @@ def find_neighbors(board, x, y):
     return neighbors
 
 
-def breadth_first_search(WIN, clock, board, start_pos, end_pos):
+def breadth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
     was_here = []
     visited = []
     q = queue.Queue()
     q.put((start_pos, [start_pos]))
     
     while not q.empty():
-        clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -250,33 +249,9 @@ def breadth_first_search(WIN, clock, board, start_pos, end_pos):
         if current_pos not in was_here:
             was_here.append(current_pos)
         
-        main_draw(WIN, board, path, was_here)
-        
-        if (x, y) == end_pos:
-            return
-        
-        neighbors = find_neighbors(board, x, y)
-        for neighbor in neighbors:
-            if neighbor in visited:
-                continue
-            
-            new_path = path + [neighbor]
-            q.put((neighbor, new_path))
-            visited.append(neighbor)
-
-
-def breadth_first_search_only_result(WIN, board, start_pos, end_pos):
-    was_here = []
-    visited = []
-    q = queue.Queue()
-    q.put((start_pos, [start_pos]))
-    
-    while not q.empty():
-        current_pos, path = q.get()
-        x, y = current_pos
-        
-        if current_pos not in was_here:
-            was_here.append(current_pos)
+        if showProcess:
+            main_draw(WIN, board, path, was_here)
+            clock.tick(FPS)
         
         if (x, y) == end_pos:
             break
@@ -293,14 +268,13 @@ def breadth_first_search_only_result(WIN, board, start_pos, end_pos):
     main_draw(WIN, board, path, was_here)
 
 
-def depth_first_search(WIN, clock, board, start_pos, end_pos):
+def depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
     was_here = []
     visited = []
     q = []
     q.append((start_pos, [start_pos]))
     
     while len(q) > 0:
-        clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -312,38 +286,9 @@ def depth_first_search(WIN, clock, board, start_pos, end_pos):
         if current_pos not in was_here:
             was_here.append(current_pos)
         
-        main_draw(WIN, board, path, was_here)
-        
-        if (x, y) == end_pos:
-            return
-        
-        neighbors = find_neighbors(board, x, y)
-        try:
-            neighbors.reverse()
-        except:
-            pass
-        for neighbor in neighbors:
-            if neighbor in visited:
-                continue
-            
-            new_path = path + [neighbor]
-            q.append((neighbor, new_path))
-            visited.append(neighbor)
-
-
-def depth_first_search_only_result(WIN, board, start_pos, end_pos):
-    was_here = []
-    visited = []
-    q = []
-    q.append((start_pos, [start_pos]))
-    
-    while len(q) > 0:
-        current_pos, path = q[-1]
-        q.pop()
-        x, y = current_pos
-        
-        if current_pos not in was_here:
-            was_here.append(current_pos)
+        if showProcess:
+            main_draw(WIN, board, path, was_here)
+            clock.tick(FPS)
         
         if (x, y) == end_pos:
             break
@@ -353,6 +298,7 @@ def depth_first_search_only_result(WIN, board, start_pos, end_pos):
             neighbors.reverse()
         except:
             pass
+        
         for neighbor in neighbors:
             if neighbor in visited:
                 continue
@@ -373,7 +319,7 @@ def find_edges(board, vertices, vertex):
     return [vertices[y][x] for x, y in edges]
 
 
-def dijkstra_search(WIN, clock, board, start_pos, end_pos):
+def dijkstra_search(WIN, clock, board, start_pos, end_pos, showProcess):
     rows, cols = len(board), len(board[0])
     vertices = [[DijkstraVertex((x, y)) for x in range(cols)] for y in range(rows)]
     
@@ -413,55 +359,13 @@ def dijkstra_search(WIN, clock, board, start_pos, end_pos):
                 neighbor.parent = current
                 pq.put(neighbor)
         
-        clock.tick(FPS)
-        main_draw(WIN, board, [], was_here)
+        if showProcess:
+            main_draw(WIN, board, [], was_here)
+            clock.tick(FPS)
     main_draw(WIN, board, path, was_here)
 
 
-def dijkstra_search_only_result(WIN, board, start_pos, end_pos):
-    rows, cols = len(board), len(board[0])
-    vertices = [[DijkstraVertex((x, y)) for x in range(cols)] for y in range(rows)]
-    
-    for row in vertices:
-        for col in row:
-            col.edges = find_edges(board, vertices, col)
-    
-    start_vertex = vertices[start_pos[1]][start_pos[0]]
-    start_vertex.dist = 0
-    end_vertex = vertices[end_pos[1]][end_pos[0]]
-    
-    pq = queue.PriorityQueue()
-    pq.put(start_vertex)
-    
-    path = [start_pos]
-    was_here = [start_pos]
-    while not pq.empty():
-        current = pq.get()
-        
-        if current.visited:
-            continue
-        current.visited = True
-        
-        was_here.append((current.x, current.y))
-        
-        if current == end_vertex:
-            while current.parent:
-                path.append((current.x, current.y))
-                current = current.parent
-            path.append((current.x, current.y))
-            break
-        
-        for neighbor in current.edges:
-            new_dist = current.dist + 1
-            if new_dist < neighbor.dist:
-                neighbor.dist = new_dist
-                neighbor.parent = current
-                pq.put(neighbor)
-
-    main_draw(WIN, board, path, was_here)
-
-
-def a_star_search(WIN, clock, board, start_pos, end_pos):
+def a_star_search(WIN, clock, board, start_pos, end_pos, showProcess):
     rows, cols = len(board), len(board[0])
     vertices = [[AstarVertex((x, y)) for x in range(cols)] for y in range(rows)]
     
@@ -503,64 +407,20 @@ def a_star_search(WIN, clock, board, start_pos, end_pos):
                 edge.heuristic = heuristic
                 heapq.heappush(heap, edge)
         
-        clock.tick(FPS)
-        main_draw(WIN, board, [], was_here)
-    main_draw(WIN, board, path, was_here)
-
-
-def a_star_search_only_result(WIN, board, start_pos, end_pos):
-    rows, cols = len(board), len(board[0])
-    vertices = [[AstarVertex((x, y)) for x in range(cols)] for y in range(rows)]
-    
-    startVertex = vertices[start_pos[1]][start_pos[0]]
-    startVertex.distance = 0
-    endVertex = vertices[end_pos[1]][end_pos[0]]
-    
-    for row in vertices:
-        for col in row:
-            col.edges = find_edges(board, vertices, col)
-            col.set_heuristic(endVertex)
-    
-    heap = []
-    heapq.heappush(heap, startVertex)
-    path = []
-    was_here = []
-    
-    while heap:
-        current = heapq.heappop(heap)
-        
-        if current.visited:
-            continue
-        current.visited = True
-        
-        was_here.append((current.x, current.y))
-        
-        if current == endVertex:
-            while current:
-                path.append((current.x, current.y))
-                current = current.parent
-            break
-        
-        for edge in current.edges:
-            cost = current.distance + 1
-            heuristic = edge.heuristic
-            if cost < edge.distance:
-                edge.distance = cost
-                edge.parent = current
-                edge.heuristic = heuristic
-                heapq.heappush(heap, edge)
-                
+        if showProcess:
+            clock.tick(FPS)
+            main_draw(WIN, board, [], was_here)
     main_draw(WIN, board, path, was_here)
 
 
 def main():
     # set board width and height / +2 because I add borders around the board
     boardWidth, boardHeight = SETTINGS["width"]+2, SETTINGS["height"]+2
-    
     board = [[" " for j in range(boardWidth)] for i in range(boardHeight)]
     
     # variable to select the start and end position
     drawMaze = SETTINGS["drawMaze"]
+    showProcess = SETTINGS["showProcess"]
     
     global TILE_WIDTH
     global TILE_HEIGHT
@@ -626,41 +486,30 @@ def main():
             pygame.display.update()
             clock.tick(60)
     
+    # if drawMaze is set to "file" program chooses a random file to load the maze from
     elif drawMaze == "file":
         board, start_pos, end_pos = load_maze_from_file()
         boardWidth, boardHeight = len(board[0]), len(board)
         TILE_WIDTH, TILE_HEIGHT = WIDTH / boardWidth, HEIGHT / boardHeight
     
-    # the main program
+    # print the board before algorithms
     main_draw(WIN, board, [], [])
     
     # First In Last Out / breadth first search
     if SETTINGS["chooseAlgorithm"] == "breadth first":
-        if SETTINGS["showProcess"]:
-            breadth_first_search(WIN, clock, board, start_pos, end_pos)
-        else:
-            breadth_first_search_only_result(WIN, board, start_pos, end_pos)
+        breadth_first_search(WIN, clock, board, start_pos, end_pos, showProcess)
     
     # First In First Out / depth first search
     elif SETTINGS["chooseAlgorithm"] == "depth first":
-        if SETTINGS["showProcess"]:
-            depth_first_search(WIN, clock, board, start_pos, end_pos)
-        else:
-            depth_first_search_only_result(WIN, board, start_pos, end_pos)
+        depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess)
     
     # dijkstra search
     elif SETTINGS["chooseAlgorithm"] == "dijkstra":
-        if SETTINGS["showProcess"]:
-            dijkstra_search(WIN, clock, board, start_pos, end_pos)
-        else:
-            dijkstra_search_only_result(WIN, board, start_pos, end_pos)
+        dijkstra_search(WIN, clock, board, start_pos, end_pos, showProcess)
     
     # A* search
     elif SETTINGS["chooseAlgorithm"] == "a*":
-        if SETTINGS["showProcess"]:
-            a_star_search(WIN, clock, board, start_pos, end_pos)
-        else:
-            a_star_search_only_result(WIN, board, start_pos, end_pos)
+        a_star_search(WIN, clock, board, start_pos, end_pos, showProcess)
     
     # to stop the program from exiting after the algorithm
     while True:
