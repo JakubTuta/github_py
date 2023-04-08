@@ -1,23 +1,26 @@
 import tkinter as tk
 import pygame
-from random import choices, randint
+from random import choices, randint, choice
 import queue
 import heapq
 from math import sqrt
+import os
 
 SETTINGS = {}
 FPS = 60
 WIDTH, HEIGHT = 700, 700
 TILE_WIDTH, TILE_HEIGHT = None, None
 
-BG_COLOR = (255, 255, 255)
-TILE_COLOR = (210, 210, 210)
-WALL_TILE_COLOR = (128, 128, 128)
-TEXT_BG_COLOR = (150, 150, 150)
-TEXT_COLOR = (0, 0, 0)
-GREEN = (0, 255, 0)
-ORANGE = (255, 165, 0)
-RED = (255, 0, 0)
+COLORS = {
+    "BG_COLOR": (255, 255, 255),
+    "TILE_COLOR": (210, 210, 210),
+    "WALL_TILE_COLOR": (128, 128, 128),
+    "TEXT_BG_COLOR": (150, 150, 150),
+    "TEXT_COLOR": (0, 0, 0),
+    "GREEN": (0, 255, 0),
+    "ORANGE": (255, 165, 0),
+    "RED": (255, 0, 0)
+}
 
 pygame.init()
 
@@ -66,7 +69,7 @@ def settings():
         except ValueError:
             return
         else:
-            if width < 4 or height < 4:
+            if width < 2 or height < 2:
                 return
         
         SETTINGS["width"] = width
@@ -119,24 +122,42 @@ def settings():
 
 def draw_at_the_start(board, WIN):
     font = pygame.font.SysFont(None, int(min(TILE_WIDTH, TILE_HEIGHT)))
-    textWidth, textHeight = font.size('#')
+    textWidth, textHeight = font.size('O')
     alignX = TILE_WIDTH // 2 - textWidth // 2
     alignY = TILE_HEIGHT // 2 - textHeight // 2
     
-    WIN.fill(BG_COLOR)
+    WIN.fill(COLORS["BG_COLOR"])
     for i, row in enumerate(board):
         for j, col in enumerate(row):
             if col == '#': # wall tile
-                pygame.draw.rect(WIN, WALL_TILE_COLOR, (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
+                pygame.draw.rect(WIN, COLORS["WALL_TILE_COLOR"], (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
             else: # any other tile
-                pygame.draw.rect(WIN, TILE_COLOR, (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
+                pygame.draw.rect(WIN, COLORS["TILE_COLOR"], (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
             
-            if col == '#':
-                WIN.blit(font.render('#', True, TEXT_COLOR), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
-            elif col == 'O':
-                WIN.blit(font.render('O', True, TEXT_COLOR), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
+            if col == 'O':
+                WIN.blit(font.render('O', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
             elif col == 'X':
-                WIN.blit(font.render('X', True, TEXT_COLOR), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
+                WIN.blit(font.render('X', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
+
+
+def load_maze_from_file():
+    fileList = os.listdir("maze")
+    file = choice(fileList)
+    
+    with open(f"maze/{file}", "r") as f:
+        board = f.readlines()
+    
+    start_pos, end_pos = None, None
+    for i, row in enumerate(board):
+        row = row.rstrip('\n')
+        board[i] = row
+        for j, col in enumerate(row):
+            if col == 'O':
+                start_pos = (j, i)
+            elif col == 'X':
+                end_pos = (j, i)
+    
+    return (board, start_pos, end_pos)
 
 
 def mouse_pressed(pos, board, value):
@@ -148,28 +169,20 @@ def mouse_pressed(pos, board, value):
                     return (j, i)
 
 
-def select_start_pos_text(WIN):
+def select_pos_text(WIN, text):
     font = pygame.font.SysFont(None, 40)
-    textWidth, textHeight = font.size("Select a start tile (O)")
+    textWidth, textHeight = font.size(text)
     
-    pygame.draw.rect(WIN, TEXT_BG_COLOR, (WIDTH / 2 - textWidth / 2 - 10, 0, textWidth + 20 ,textHeight + 20))
-    WIN.blit(font.render("Select a start tile (O)", True, TEXT_COLOR), (WIDTH / 2 - textWidth / 2, 10))
-
-
-def select_end_pos_text(WIN):
-    font = pygame.font.SysFont(None, 40)
-    textWidth, textHeight = font.size("Select an end tile (X)")
-    
-    pygame.draw.rect(WIN, TEXT_BG_COLOR, (WIDTH / 2 - textWidth / 2 - 10, 0, textWidth + 20 ,textHeight + 20))
-    WIN.blit(font.render("Select an end tile (X)", True, TEXT_COLOR), (WIDTH / 2 - textWidth / 2, 10))
+    pygame.draw.rect(WIN, COLORS["TEXT_BG_COLOR"], (WIDTH / 2 - textWidth / 2 - 10, 0, textWidth + 20 ,textHeight + 20))
+    WIN.blit(font.render(text, True, COLORS["TEXT_COLOR"]), (WIDTH / 2 - textWidth / 2, 10))
 
 
 def start_button(WIN):
     font = pygame.font.SysFont(None, 60)
     textWidth, textHeight = font.size("Ready")
     
-    pygame.draw.rect(WIN, TEXT_BG_COLOR, (WIDTH / 2 - textWidth / 2 - 10, 0, textWidth + 20, textHeight + 20))
-    WIN.blit(font.render("Ready", True, TEXT_COLOR), (WIDTH / 2 - textWidth / 2, 10))
+    pygame.draw.rect(WIN, COLORS["TEXT_BG_COLOR"], (WIDTH / 2 - textWidth / 2 - 10, 0, textWidth + 20, textHeight + 20))
+    WIN.blit(font.render("Ready", True, COLORS["TEXT_COLOR"]), (WIDTH / 2 - textWidth / 2, 10))
     
     return (WIDTH / 2 - textWidth / 2 - 10, 0, WIDTH / 2 + textWidth / 2 + 10, textHeight + 20) # x1 y1 x2 y2
 
@@ -180,30 +193,28 @@ def main_draw(WIN, board, path, was_here):
     alignX = TILE_WIDTH // 2 - textWidth // 2
     alignY = TILE_HEIGHT // 2 - textHeight // 2
     
-    WIN.fill(BG_COLOR)
+    WIN.fill(COLORS["BG_COLOR"])
     for i, row in enumerate(board):
         for j, col in enumerate(row):
             if (j, i) in path:
-                color = GREEN
+                color = COLORS["GREEN"]
             elif (j, i) in was_here:
-                color = ORANGE
+                color = COLORS["ORANGE"]
             elif col == '#':
-                color = WALL_TILE_COLOR
+                color = COLORS["WALL_TILE_COLOR"]
             elif col == 'X':
-                color = RED
+                color = COLORS["RED"]
             elif col == 'O':
-                color = GREEN
+                color = COLORS["GREEN"]
             else:
-                color = TILE_COLOR
+                color = COLORS["TILE_COLOR"]
             
             pygame.draw.rect(WIN, color, (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
             
-            if col == '#':
-                WIN.blit(font.render('#', True, TEXT_COLOR), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
-            elif col == 'O':
-                WIN.blit(font.render('O', True, TEXT_COLOR), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
+            if col == 'O':
+                WIN.blit(font.render('O', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
             elif col == 'X':
-                WIN.blit(font.render('X', True, TEXT_COLOR), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
+                WIN.blit(font.render('X', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
     pygame.display.update()
 
 
@@ -561,13 +572,18 @@ def main():
             if i == 0 or i == boardHeight - 1 or j == 0 or j == boardWidth - 1:
                 board[i][j] = '#'
     
+    # pygame essentials
+    clock = pygame.time.Clock()
+    WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("PATHFINDING ALGORITHM")
+    
     start_pos, end_pos = None, None
     
-    # if drawMaze is false, set random tiles on board as walls
-    if not drawMaze:
+    # if drawMaze is set to "randomize" the random tiles are set as walls
+    if drawMaze == "randomize":
         for i in range(1, boardHeight - 1):
             for j in range(1, boardHeight - 1):
-                board[i][j] = choices((' ', '#'), weights=(3, 1))[0]
+                board[i][j] = choices((' ', '#'), weights=(2, 1))[0]
         
         # set random start and end pos
         start_pos = (randint(1, boardWidth - 2), randint(1, boardHeight - 2))
@@ -579,30 +595,23 @@ def main():
         board[start_pos[1]][start_pos[0]] = 'O'
         board[end_pos[1]][end_pos[0]] = 'X'
     
-    # pygame essentials
-    clock = pygame.time.Clock()
-    WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("PATHFINDING ALGORITHM")
-    
-    # just to select the start, end and wall positions
-    while drawMaze:
-        clock.tick(FPS)
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-        
-        draw_at_the_start(board, WIN)
-        # print texts on screen
-        if drawMaze:
+    # if drawMaze is set to "draw" the user chooses start -> end -> walls
+    elif drawMaze == "draw":
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+            
+            draw_at_the_start(board, WIN)
+            # print texts on screen
             if start_pos == None:
-                select_start_pos_text(WIN)
+                select_pos_text(WIN, "Select a start tile (O)")
             elif end_pos == None:
-                select_end_pos_text(WIN)
+                select_pos_text(WIN, "Select an end tile (X)")
             else:
                 button_pos = start_button(WIN)
             
-            #check where mouse was clicked
+            # check where mouse was clicked
             if pygame.mouse.get_pressed()[0]:
                 pos = pygame.mouse.get_pos()
                 
@@ -612,31 +621,41 @@ def main():
                     end_pos = mouse_pressed(pos, board, 'X')
                 else:
                     if button_pos[0] < pos[0] < button_pos[2] and button_pos[1] < pos[1] < button_pos[3]:
-                        drawMaze = False
+                        break
                     mouse_pressed(pos, board, '#')
-        pygame.display.update()
+            pygame.display.update()
+            clock.tick(60)
+    
+    elif drawMaze == "file":
+        board, start_pos, end_pos = load_maze_from_file()
+        boardWidth, boardHeight = len(board[0]), len(board)
+        TILE_WIDTH, TILE_HEIGHT = WIDTH / boardWidth, HEIGHT / boardHeight
     
     # the main program
     main_draw(WIN, board, [], [])
     
-    # First In Last Out
+    # First In Last Out / breadth first search
     if SETTINGS["chooseAlgorithm"] == "breadth first":
         if SETTINGS["showProcess"]:
             breadth_first_search(WIN, clock, board, start_pos, end_pos)
         else:
             breadth_first_search_only_result(WIN, board, start_pos, end_pos)
     
-    # First In First Out
+    # First In First Out / depth first search
     elif SETTINGS["chooseAlgorithm"] == "depth first":
         if SETTINGS["showProcess"]:
             depth_first_search(WIN, clock, board, start_pos, end_pos)
         else:
             depth_first_search_only_result(WIN, board, start_pos, end_pos)
+    
+    # dijkstra search
     elif SETTINGS["chooseAlgorithm"] == "dijkstra":
         if SETTINGS["showProcess"]:
             dijkstra_search(WIN, clock, board, start_pos, end_pos)
         else:
             dijkstra_search_only_result(WIN, board, start_pos, end_pos)
+    
+    # A* search
     elif SETTINGS["chooseAlgorithm"] == "a*":
         if SETTINGS["showProcess"]:
             a_star_search(WIN, clock, board, start_pos, end_pos)
