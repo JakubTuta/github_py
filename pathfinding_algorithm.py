@@ -250,7 +250,7 @@ def breadth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
             was_here.append(current_pos)
         
         if showProcess:
-            main_draw(WIN, board, path, was_here)
+            main_draw(WIN, board, [], was_here)
             clock.tick(FPS)
         
         if (x, y) == end_pos:
@@ -287,7 +287,7 @@ def depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
             was_here.append(current_pos)
         
         if showProcess:
-            main_draw(WIN, board, path, was_here)
+            main_draw(WIN, board, [], was_here)
             clock.tick(FPS)
         
         if (x, y) == end_pos:
