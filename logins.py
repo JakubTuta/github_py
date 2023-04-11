@@ -2,7 +2,7 @@ import sqlite3 as sql
 import tkinter as tk
 
 
-def insertIntoDB(nameText, loginText, passwordText):
+def insert_into_database(nameText, loginText, passwordText):
     if nameText == "" or loginText == "" or passwordText == "":
         return
     
@@ -11,7 +11,41 @@ def insertIntoDB(nameText, loginText, passwordText):
     databaseConnection.commit()
 
 
-def showWholeDatabase(textLabel):
+def delete_name(nameText):
+    if nameText == "":
+        return
+    
+    databaseConnection.execute(f"DELETE FROM data WHERE name='{nameText}'")
+    databaseConnection.commit()
+
+
+def clear_database():
+    databaseConnection.execute("DROP TABLE data")
+    databaseConnection.execute('''
+                               CREATE TABLE data
+                               (
+                                   name varchar(50),
+                                   login varchar(50),
+                                   password varchar(50)
+                               );
+                               ''')
+
+
+def show_name(textLabel, nameText):
+    if nameText == "":
+        return
+    
+    textLabel.configure(state="normal")
+    textLabel.delete(1.0, tk.END)
+    textLabel.insert(tk.END, "{:<10}{:<70}{:<50}{:<50}\n".format("Id", "Name", "Login", "Password"))
+    
+    cursor = databaseConnection.execute(f"SELECT * FROM data WHERE name='{nameText}'")
+    for name, login, password in cursor:
+        textLabel.insert(tk.END, "{:<10}{:<70}{:<50}{:<50}\n".format(1, name, login, password))
+    textLabel.configure(state="disabled")
+
+
+def show_whole_database(textLabel):
     textLabel.configure(state="normal")
     textLabel.delete(1.0, tk.END)
     textLabel.insert(tk.END, "{:<10}{:<70}{:<50}{:<50}\n".format("Id", "Name", "Login", "Password"))
@@ -48,12 +82,12 @@ def main():
     textLabel.insert(tk.END, "{:<10}{:<70}{:<50}{:<50}\n".format("Id", "Name", "Login", "Password"))
     textLabel.configure(state="disabled")
     
-    tk.Button(text="Add", font=buttonFont, width=12, command=lambda: insertIntoDB(nameEntry.get(), loginEntry.get(), passwordEntry.get())).grid(row=2, column=0, padx=10, pady=15)
-    tk.Button(text="Delete 1", font=buttonFont, width=12).grid(row=2, column=2, padx=10, pady=15)
-    tk.Button(text="Delete all", font=buttonFont, width=12).grid(row=2, column=4, padx=10, pady=15)
+    tk.Button(text="Add", font=buttonFont, width=12, command=lambda: insert_into_database(nameEntry.get(), loginEntry.get(), passwordEntry.get())).grid(row=2, column=0, padx=10, pady=15)
+    tk.Button(text="Delete name", font=buttonFont, width=12, command=lambda: delete_name(nameEntry.get())).grid(row=2, column=2, padx=10, pady=15)
+    tk.Button(text="Delete all", font=buttonFont, width=12, command=clear_database).grid(row=2, column=4, padx=10, pady=15)
     
-    tk.Button(text="Show name", font=buttonFont, width=12).grid(row=3, column=1, padx=10, pady=15)
-    tk.Button(text="Show all", font=buttonFont, width=12, command=lambda: showWholeDatabase(textLabel)).grid(row=3, column=3, padx=10, pady=15)
+    tk.Button(text="Show name", font=buttonFont, width=12, command=lambda: show_name(textLabel, nameEntry.get())).grid(row=3, column=1, padx=10, pady=15)
+    tk.Button(text="Show all", font=buttonFont, width=12, command=lambda: show_whole_database(textLabel)).grid(row=3, column=3, padx=10, pady=15)
     
     root.mainloop()
 
