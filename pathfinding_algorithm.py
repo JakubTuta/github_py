@@ -7,7 +7,7 @@ from math import sqrt
 import os
 
 SETTINGS = {}
-FPS = 60
+FPS = 100
 WIDTH, HEIGHT = 700, 700
 TILE_WIDTH, TILE_HEIGHT = None, None
 
@@ -218,8 +218,9 @@ def main_draw(WIN, board, path, was_here):
     pygame.display.update()
 
 
-def find_neighbors(board, x, y):
+def find_neighbors(board, pos):
     neighbors = []
+    x, y = pos
     
     possibleMoves = [(0, 1), (1, 0), (0, -1), (-1, 0)]
     
@@ -244,7 +245,6 @@ def breadth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
                 pygame.quit()
 
         current_pos, path = q.get()
-        x, y = current_pos
         
         if current_pos not in was_here:
             was_here.append(current_pos)
@@ -253,10 +253,10 @@ def breadth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
             main_draw(WIN, board, [], was_here)
             clock.tick(FPS)
         
-        if (x, y) == end_pos:
+        if current_pos == end_pos:
             break
         
-        neighbors = find_neighbors(board, x, y)
+        neighbors = find_neighbors(board, current_pos)
         for neighbor in neighbors:
             if neighbor in visited:
                 continue
@@ -281,7 +281,6 @@ def depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
 
         current_pos, path = q[-1]
         q.pop()
-        x, y = current_pos
         
         if current_pos not in was_here:
             was_here.append(current_pos)
@@ -290,11 +289,11 @@ def depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
             main_draw(WIN, board, [], was_here)
             clock.tick(FPS)
         
-        if (x, y) == end_pos:
+        if current_pos == end_pos:
             break
         
-        neighbors = find_neighbors(board, x, y)
         try:
+            neighbors = find_neighbors(board, current_pos)
             neighbors.reverse()
         except:
             pass
@@ -306,6 +305,7 @@ def depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
             new_path = path + [neighbor]
             q.append((neighbor, new_path))
             visited.append(neighbor)
+            
     main_draw(WIN, board, path, was_here)
 
 
@@ -432,7 +432,7 @@ def main():
             if i == 0 or i == boardHeight - 1 or j == 0 or j == boardWidth - 1:
                 board[i][j] = '#'
     
-    # pygame essentials
+    # pygame essentials to start a clock for the program / create WIN (window) object / set caption for the program
     clock = pygame.time.Clock()
     WIN = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("PATHFINDING ALGORITHM")
@@ -511,7 +511,7 @@ def main():
     elif SETTINGS["chooseAlgorithm"] == "a*":
         a_star_search(WIN, clock, board, start_pos, end_pos, showProcess)
     
-    # to stop the program from exiting after the algorithm
+    # to stop the program from exiting after the algorithm ends
     while True:
         event = pygame.event.wait()
         if event.type == pygame.QUIT or event.type == pygame.KEYDOWN:
