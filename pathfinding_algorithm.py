@@ -39,6 +39,9 @@ class DijkstraVertex:
     
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
+    
+    def get_pos(self):
+        return (self.x, self.y)
 
 
 class AstarVertex:
@@ -50,15 +53,18 @@ class AstarVertex:
         self.heuristic = 0
         self.visited = False
         self.parent = None
-        
-    def set_heuristic(self, goal):
-        self.heuristic = sqrt((self.x - goal.x) ** 2 + (self.y - goal.y) ** 2)
 
     def __lt__(self, other):
         return self.distance + self.heuristic < other.distance + other.heuristic
     
     def __eq__(self, other):
         return (self.x, self.y) == (other.x, other.y)
+    
+    def set_heuristic(self, goal):
+        self.heuristic = sqrt((self.x - goal.x) ** 2 + (self.y - goal.y) ** 2)
+    
+    def get_pos(self):
+        return (self.x, self.y)
 
 
 def settings():
@@ -157,14 +163,13 @@ def main_draw(WIN, board, path, was_here):
                 color = COLORS["WALL_TILE_COLOR"]
             elif col == 'X':
                 color = COLORS["RED"]
-            elif col == 'O':
-                color = COLORS["GREEN"]
             else:
                 color = COLORS["TILE_COLOR"]
             
             pygame.draw.rect(WIN, color, (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
             
             if col == 'O':
+                pygame.draw.rect(WIN, COLORS["GREEN"], (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
                 WIN.blit(font.render('O', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
             elif col == 'X':
                 WIN.blit(font.render('X', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
@@ -178,17 +183,10 @@ def load_maze_from_file():
     with open(f"maze/{file}", "r") as f:
         board = f.readlines()
     
-    start_pos, end_pos = None, None
-    for i, row in enumerate(board):
-        row = row.rstrip('\n')
-        board[i] = row
-        for j, col in enumerate(row):
-            if col == 'O':
-                start_pos = (j, i)
-            elif col == 'X':
-                end_pos = (j, i)
+    for i in range(len(board)):
+        board[i] = board[i].rstrip('\n')
     
-    return (board, start_pos, end_pos)
+    return board
 
 
 def mouse_pressed(pos, board, value):
@@ -220,7 +218,7 @@ def find_neighbors(board, pos):
     neighbors = []
     x, y = pos
     
-    possibleMoves = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    possibleMoves = [(0, -1), (1, 0), (0, 1), (-1, 0)]
     
     for dx, dy in possibleMoves:
         newX = x + dx
@@ -231,8 +229,17 @@ def find_neighbors(board, pos):
     return neighbors
 
 
-def breadth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
-    was_here = []
+def find_value(board, value):
+    for i, row in enumerate(board):
+        for j, col in enumerate(row):
+            if col == value:
+                return (j, i)
+
+
+def breadth_first_search(WIN, clock, board, showProcess):
+    start_pos = find_value(board, 'O')
+    end_pos = find_value(board, 'X')
+    
     visited = []
     q = queue.Queue()
     q.put((start_pos, [start_pos]))
@@ -241,33 +248,33 @@ def breadth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-
+        
         current_pos, path = q.get()
-        
-        if current_pos not in was_here:
-            was_here.append(current_pos)
-        
-        if showProcess:
-            main_draw(WIN, board, [], was_here)
-            clock.tick(FPS)
-        
         if current_pos == end_pos:
             break
+        elif current_pos in visited:
+            continue
+        visited.append(current_pos)
         
-        neighbors = find_neighbors(board, current_pos)
-        for neighbor in neighbors:
-            if neighbor in visited:
-                continue
-            
+        if showProcess:
+            main_draw(WIN, board, [], visited)
+            clock.tick(FPS)
+        
+        for neighbor in find_neighbors(board, current_pos):
             new_path = path + [neighbor]
             q.put((neighbor, new_path))
-            visited.append(neighbor)
     
-    main_draw(WIN, board, path, was_here)
+    else:
+        main_draw(WIN, board, [], visited)
+        return
+    
+    main_draw(WIN, board, path, visited)
 
 
-def depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
-    was_here = []
+def depth_first_search(WIN, clock, board, showProcess):
+    start_pos = find_value(board, 'O')
+    end_pos = find_value(board, 'X')
+    
     visited = []
     q = []
     q.append((start_pos, [start_pos]))
@@ -277,18 +284,16 @@ def depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
             if event.type == pygame.QUIT:
                 pygame.quit()
 
-        current_pos, path = q[-1]
-        q.pop()
-        
-        if current_pos not in was_here:
-            was_here.append(current_pos)
-        
-        if showProcess:
-            main_draw(WIN, board, [], was_here)
-            clock.tick(FPS)
-        
+        current_pos, path = q.pop()
         if current_pos == end_pos:
             break
+        elif current_pos in visited:
+            continue
+        visited.append(current_pos)
+        
+        if showProcess:
+            main_draw(WIN, board, [], visited)
+            clock.tick(FPS)
         
         try:
             neighbors = find_neighbors(board, current_pos)
@@ -297,19 +302,19 @@ def depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess):
             pass
         
         for neighbor in neighbors:
-            if neighbor in visited:
-                continue
-            
             new_path = path + [neighbor]
             q.append((neighbor, new_path))
-            visited.append(neighbor)
-            
-    main_draw(WIN, board, path, was_here)
+    
+    else:
+        main_draw(WIN, board, [], visited)
+        return
+    
+    main_draw(WIN, board, path, visited)
 
 
 def find_edges(board, vertices, vertex):
     edges = []
-    for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+    for dx, dy in [(0, -1), (1, 0), (0, 1), (-1, 0)]:
         x = vertex.x + dx
         y = vertex.y + dy
         if 0 <= x < len(board[0]) and 0 <= y < len(board) and board[y][x] != '#':
@@ -317,7 +322,10 @@ def find_edges(board, vertices, vertex):
     return [vertices[y][x] for x, y in edges]
 
 
-def dijkstra_search(WIN, clock, board, start_pos, end_pos, showProcess):
+def dijkstra_search(WIN, clock, board, showProcess):
+    start_pos = find_value(board, 'O')
+    end_pos = find_value(board, 'X')
+    
     rows, cols = len(board), len(board[0])
     vertices = [[DijkstraVertex((x, y)) for x in range(cols)] for y in range(rows)]
     
@@ -329,41 +337,47 @@ def dijkstra_search(WIN, clock, board, start_pos, end_pos, showProcess):
     start_vertex.dist = 0
     end_vertex = vertices[end_pos[1]][end_pos[0]]
     
-    pq = queue.PriorityQueue()
-    pq.put(start_vertex)
+    q = queue.Queue()
+    q.put(start_vertex)
     
-    path = [start_pos]
-    was_here = [start_pos]
-    while not pq.empty():
-        current = pq.get()
-        
-        if current.visited:
-            continue
-        current.visited = True
-        
-        was_here.append((current.x, current.y))
+    path = []
+    visited = []
+    while not q.empty():
+        current = q.get()
         
         if current == end_vertex:
             while current.parent:
-                path.append((current.x, current.y))
+                path.append(current.get_pos())
                 current = current.parent
-            path.append((current.x, current.y))
+            path.append(current.get_pos())
             break
+        elif current.get_pos() in visited:
+            continue
+        current.visited = True
+        visited.append(current.get_pos())
+        
+        if showProcess:
+            main_draw(WIN, board, [], visited)
+            clock.tick(FPS)
         
         for neighbor in current.edges:
             new_dist = current.dist + 1
             if new_dist < neighbor.dist:
                 neighbor.dist = new_dist
                 neighbor.parent = current
-                pq.put(neighbor)
-        
-        if showProcess:
-            main_draw(WIN, board, [], was_here)
-            clock.tick(FPS)
-    main_draw(WIN, board, path, was_here)
+                q.put(neighbor)
+    
+    else:
+        main_draw(WIN, board, [], visited)
+        return
+    
+    main_draw(WIN, board, path, visited)
 
 
-def a_star_search(WIN, clock, board, start_pos, end_pos, showProcess):
+def a_star_search(WIN, clock, board, showProcess):
+    start_pos = find_value(board, 'O')
+    end_pos = find_value(board, 'X')
+    
     rows, cols = len(board), len(board[0])
     vertices = [[AstarVertex((x, y)) for x in range(cols)] for y in range(rows)]
     
@@ -379,22 +393,24 @@ def a_star_search(WIN, clock, board, start_pos, end_pos, showProcess):
     heap = []
     heapq.heappush(heap, startVertex)
     path = []
-    was_here = []
+    visited = []
     
     while heap:
         current = heapq.heappop(heap)
         
-        if current.visited:
-            continue
-        current.visited = True
-        
-        was_here.append((current.x, current.y))
-        
         if current == endVertex:
             while current:
-                path.append((current.x, current.y))
+                path.append(current.get_pos())
                 current = current.parent
             break
+        elif current.get_pos() in visited:
+            continue
+        current.visited = True
+        visited.append(current.get_pos())
+        
+        if showProcess:
+            clock.tick(FPS)
+            main_draw(WIN, board, [], visited)
         
         for edge in current.edges:
             cost = current.distance + 1
@@ -404,21 +420,17 @@ def a_star_search(WIN, clock, board, start_pos, end_pos, showProcess):
                 edge.parent = current
                 edge.heuristic = heuristic
                 heapq.heappush(heap, edge)
-        
-        if showProcess:
-            clock.tick(FPS)
-            main_draw(WIN, board, [], was_here)
-    main_draw(WIN, board, path, was_here)
-
-
-def main():
     
+    else:
+        main_draw(WIN, board, [], visited)
+    
+    main_draw(WIN, board, path, visited)
+
+
+def get_board(drawMaze, WIN, clock):
     # set board width and height / +2 because I add borders around the board
     boardWidth, boardHeight = SETTINGS["width"] + 2, SETTINGS["height"] + 2
     board = [[" " for _ in range(boardWidth)] for _ in range(boardHeight)]
-    
-    drawMaze = SETTINGS["drawMaze"]
-    showProcess = SETTINGS["showProcess"]
     
     global TILE_WIDTH
     global TILE_HEIGHT
@@ -429,13 +441,6 @@ def main():
         for j in range(boardWidth):
             if i == 0 or i == boardHeight - 1 or j == 0 or j == boardWidth - 1:
                 board[i][j] = '#'
-    
-    # pygame essentials to start a clock for the program / create WIN (window) object / set caption for the program
-    clock = pygame.time.Clock()
-    WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("PATHFINDING ALGORITHM")
-    
-    start_pos, end_pos = None, None
     
     # if drawMaze is set to "randomize" the random tiles are set as walls
     if drawMaze == "randomize":
@@ -455,6 +460,7 @@ def main():
     
     # if drawMaze is set to "draw" the user chooses start -> end -> walls
     elif drawMaze == "draw":
+        start_pos, end_pos = None, None
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -487,28 +493,43 @@ def main():
     
     # if drawMaze is set to "file" program chooses a random file to load the maze from
     elif drawMaze == "file":
-        board, start_pos, end_pos = load_maze_from_file()
+        board = load_maze_from_file()
         boardWidth, boardHeight = len(board[0]), len(board)
         TILE_WIDTH, TILE_HEIGHT = WIDTH / boardWidth, HEIGHT / boardHeight
+    
+    return board
+
+
+def main():
+    drawMaze = SETTINGS["drawMaze"]
+    showProcess = SETTINGS["showProcess"]
+    
+    # pygame essentials to start a clock for the program / create WIN (window) object / set caption for the program
+    clock = pygame.time.Clock()
+    WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("PATHFINDING ALGORITHM")
+    
+    # loads the board depending on 
+    board = get_board(drawMaze, WIN, clock)
     
     # print the board before algorithms
     main_draw(WIN, board, [], [])
     
     # First In Last Out / breadth first search
     if SETTINGS["chooseAlgorithm"] == "breadth first":
-        breadth_first_search(WIN, clock, board, start_pos, end_pos, showProcess)
+        breadth_first_search(WIN, clock, board, showProcess)
     
     # First In First Out / depth first search
     elif SETTINGS["chooseAlgorithm"] == "depth first":
-        depth_first_search(WIN, clock, board, start_pos, end_pos, showProcess)
+        depth_first_search(WIN, clock, board, showProcess)
     
     # dijkstra search
     elif SETTINGS["chooseAlgorithm"] == "dijkstra":
-        dijkstra_search(WIN, clock, board, start_pos, end_pos, showProcess)
+        dijkstra_search(WIN, clock, board, showProcess)
     
     # A* search
     elif SETTINGS["chooseAlgorithm"] == "a*":
-        a_star_search(WIN, clock, board, start_pos, end_pos, showProcess)
+        a_star_search(WIN, clock, board, showProcess)
     
     # to stop the program from exiting after the algorithm ends
     while True:
