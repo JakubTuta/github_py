@@ -123,8 +123,8 @@ def settings():
 def draw_at_the_start(board, WIN):
     font = pygame.font.SysFont(None, int(min(TILE_WIDTH, TILE_HEIGHT)))
     textWidth, textHeight = font.size('O')
-    alignX = TILE_WIDTH // 2 - textWidth // 2
-    alignY = TILE_HEIGHT // 2 - textHeight // 2
+    alignX = TILE_WIDTH / 2 - textWidth / 2
+    alignY = TILE_HEIGHT / 2 - textHeight / 2
     
     WIN.fill(COLORS["BG_COLOR"])
     for i, row in enumerate(board):
@@ -140,58 +140,11 @@ def draw_at_the_start(board, WIN):
                 WIN.blit(font.render('X', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
 
 
-def load_maze_from_file():
-    fileList = os.listdir("maze")
-    file = choice(fileList)
-    
-    with open(f"maze/{file}", "r") as f:
-        board = f.readlines()
-    
-    start_pos, end_pos = None, None
-    for i, row in enumerate(board):
-        row = row.rstrip('\n')
-        board[i] = row
-        for j, col in enumerate(row):
-            if col == 'O':
-                start_pos = (j, i)
-            elif col == 'X':
-                end_pos = (j, i)
-    
-    return (board, start_pos, end_pos)
-
-
-def mouse_pressed(pos, board, value):
-    for i, row in enumerate(board):
-        for j, col in enumerate(row):
-            if j*TILE_WIDTH < pos[0] < (j+1) * TILE_WIDTH - 2 and i * TILE_HEIGHT < pos[1] < (i+1) * TILE_HEIGHT - 2:
-                if board[i][j] == ' ':
-                    board[i][j] = value
-                    return (j, i)
-
-
-def select_pos_text(WIN, text):
-    font = pygame.font.SysFont(None, 40)
-    textWidth, textHeight = font.size(text)
-    
-    pygame.draw.rect(WIN, COLORS["TEXT_BG_COLOR"], (WIDTH / 2 - textWidth / 2 - 10, 0, textWidth + 20 ,textHeight + 20))
-    WIN.blit(font.render(text, True, COLORS["TEXT_COLOR"]), (WIDTH / 2 - textWidth / 2, 10))
-
-
-def start_button(WIN):
-    font = pygame.font.SysFont(None, 60)
-    textWidth, textHeight = font.size("Ready")
-    
-    pygame.draw.rect(WIN, COLORS["TEXT_BG_COLOR"], (WIDTH / 2 - textWidth / 2 - 10, 0, textWidth + 20, textHeight + 20))
-    WIN.blit(font.render("Ready", True, COLORS["TEXT_COLOR"]), (WIDTH / 2 - textWidth / 2, 10))
-    
-    return (WIDTH / 2 - textWidth / 2 - 10, 0, WIDTH / 2 + textWidth / 2 + 10, textHeight + 20) # x1 y1 x2 y2
-
-
 def main_draw(WIN, board, path, was_here):
     font = pygame.font.SysFont(None, int(min(TILE_WIDTH, TILE_HEIGHT)))
     textWidth, textHeight = font.size('X')
-    alignX = TILE_WIDTH // 2 - textWidth // 2
-    alignY = TILE_HEIGHT // 2 - textHeight // 2
+    alignX = TILE_WIDTH / 2 - textWidth / 2
+    alignY = TILE_HEIGHT / 2 - textHeight / 2
     
     WIN.fill(COLORS["BG_COLOR"])
     for i, row in enumerate(board):
@@ -216,6 +169,51 @@ def main_draw(WIN, board, path, was_here):
             elif col == 'X':
                 WIN.blit(font.render('X', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
     pygame.display.update()
+
+
+def load_maze_from_file():
+    fileList = os.listdir("maze")
+    file = choice(fileList)
+    
+    with open(f"maze/{file}", "r") as f:
+        board = f.readlines()
+    
+    start_pos, end_pos = None, None
+    for i, row in enumerate(board):
+        row = row.rstrip('\n')
+        board[i] = row
+        for j, col in enumerate(row):
+            if col == 'O':
+                start_pos = (j, i)
+            elif col == 'X':
+                end_pos = (j, i)
+    
+    return (board, start_pos, end_pos)
+
+
+def mouse_pressed(pos, board, value):
+    x, y = int(pos[0] / TILE_WIDTH), int(pos[1] / TILE_HEIGHT)
+    if board[y][x] == ' ':
+        board[y][x] = value
+        return (x, y)
+
+
+def select_pos_text(WIN, text):
+    font = pygame.font.SysFont(None, 40)
+    textWidth, textHeight = font.size(text)
+    
+    pygame.draw.rect(WIN, COLORS["TEXT_BG_COLOR"], (WIDTH / 2 - textWidth / 2 - 10, 0, textWidth + 20 ,textHeight + 20))
+    WIN.blit(font.render(text, True, COLORS["TEXT_COLOR"]), (WIDTH / 2 - textWidth / 2, 10))
+
+
+def start_button(WIN):
+    font = pygame.font.SysFont(None, 60)
+    textWidth, textHeight = font.size("Ready")
+    
+    pygame.draw.rect(WIN, COLORS["TEXT_BG_COLOR"], (WIDTH / 2 - textWidth / 2 - 10, 0, textWidth + 20, textHeight + 20))
+    WIN.blit(font.render("Ready", True, COLORS["TEXT_COLOR"]), (WIDTH / 2 - textWidth / 2, 10))
+    
+    return (WIDTH / 2 - textWidth / 2 - 10, 0, WIDTH / 2 + textWidth / 2 + 10, textHeight + 20) # x1 y1 x2 y2
 
 
 def find_neighbors(board, pos):
@@ -414,11 +412,11 @@ def a_star_search(WIN, clock, board, start_pos, end_pos, showProcess):
 
 
 def main():
-    # set board width and height / +2 because I add borders around the board
-    boardWidth, boardHeight = SETTINGS["width"]+2, SETTINGS["height"]+2
-    board = [[" " for j in range(boardWidth)] for i in range(boardHeight)]
     
-    # variable to select the start and end position
+    # set board width and height / +2 because I add borders around the board
+    boardWidth, boardHeight = SETTINGS["width"] + 2, SETTINGS["height"] + 2
+    board = [[" " for _ in range(boardWidth)] for _ in range(boardHeight)]
+    
     drawMaze = SETTINGS["drawMaze"]
     showProcess = SETTINGS["showProcess"]
     
@@ -426,7 +424,7 @@ def main():
     global TILE_HEIGHT
     TILE_WIDTH, TILE_HEIGHT = WIDTH / boardWidth, HEIGHT / boardHeight
     
-    # set board borders as walls
+    # set tiles on border of the board as walls
     for i in range(boardHeight):
         for j in range(boardWidth):
             if i == 0 or i == boardHeight - 1 or j == 0 or j == boardWidth - 1:
@@ -463,6 +461,7 @@ def main():
                     pygame.quit()
             
             draw_at_the_start(board, WIN)
+            
             # print texts on screen
             if start_pos == None:
                 select_pos_text(WIN, "Select a start tile (O)")
