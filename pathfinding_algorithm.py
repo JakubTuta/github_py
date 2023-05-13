@@ -61,7 +61,8 @@ class AstarVertex:
         return (self.x, self.y) == (other.x, other.y)
     
     def set_heuristic(self, goal):
-        self.heuristic = sqrt((self.x - goal.x) ** 2 + (self.y - goal.y) ** 2)
+        # self.heuristic = sqrt((self.x - goal.x) ** 2 + (self.y - goal.y) ** 2)
+        self.heuristic = abs(self.x - goal.x) + abs(self.y - goal.y)
     
     def get_pos(self):
         return (self.x, self.y)
@@ -69,15 +70,18 @@ class AstarVertex:
 
 def settings():
     def start_algorithm(root, width, height, showProcess, chooseAlgorithm, drawMaze):
+        
         try:
             width = int(width)
             height = int(height)
-        except ValueError:
+        except:
             return
-        else:
-            if width < 2 or height < 2:
-                return
         
+        if width < 2 or width > 50 or height < 2 or height > 50:
+            return
+        
+        height = int(height)
+        width = int(width)
         SETTINGS["width"] = width
         SETTINGS["height"] = height
         SETTINGS["showProcess"] = showProcess
@@ -126,31 +130,15 @@ def settings():
     root.mainloop()
 
 
-def draw_at_the_start(board, WIN):
+def main_draw(WIN, board, path, was_here, atStart = False):
     font = pygame.font.SysFont(None, int(min(TILE_WIDTH, TILE_HEIGHT)))
     textWidth, textHeight = font.size('O')
-    alignX = TILE_WIDTH / 2 - textWidth / 2
-    alignY = TILE_HEIGHT / 2 - textHeight / 2
+    alignStartX = TILE_WIDTH / 2 - textWidth / 2
+    alignStartY = TILE_HEIGHT / 2 - textHeight / 2
     
-    WIN.fill(COLORS["BG_COLOR"])
-    for i, row in enumerate(board):
-        for j, col in enumerate(row):
-            if col == '#': # wall tile
-                pygame.draw.rect(WIN, COLORS["WALL_TILE_COLOR"], (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
-            else: # any other tile
-                pygame.draw.rect(WIN, COLORS["TILE_COLOR"], (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
-            
-            if col == 'O':
-                WIN.blit(font.render('O', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
-            elif col == 'X':
-                WIN.blit(font.render('X', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
-
-
-def main_draw(WIN, board, path, was_here):
-    font = pygame.font.SysFont(None, int(min(TILE_WIDTH, TILE_HEIGHT)))
     textWidth, textHeight = font.size('X')
-    alignX = TILE_WIDTH / 2 - textWidth / 2
-    alignY = TILE_HEIGHT / 2 - textHeight / 2
+    alignEndX = TILE_WIDTH / 2 - textWidth / 2
+    alignEndY = TILE_HEIGHT / 2 - textHeight / 2
     
     WIN.fill(COLORS["BG_COLOR"])
     for i, row in enumerate(board):
@@ -170,10 +158,12 @@ def main_draw(WIN, board, path, was_here):
             
             if col == 'O':
                 pygame.draw.rect(WIN, COLORS["GREEN"], (j*TILE_WIDTH, i*TILE_HEIGHT, TILE_WIDTH-2, TILE_HEIGHT-2))
-                WIN.blit(font.render('O', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
+                WIN.blit(font.render('O', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignStartX, i*TILE_HEIGHT + alignStartY))
             elif col == 'X':
-                WIN.blit(font.render('X', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignX, i*TILE_HEIGHT + alignY))
-    pygame.display.update()
+                WIN.blit(font.render('X', True, COLORS["TEXT_COLOR"]), (j*TILE_WIDTH + alignEndX, i*TILE_HEIGHT + alignEndY))
+    
+    if not atStart:
+        pygame.display.update()
 
 
 def load_maze_from_file():
@@ -343,6 +333,10 @@ def dijkstra_search(WIN, clock, board, showProcess):
     path = []
     visited = []
     while not q.empty():
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+        
         current = q.get()
         
         if current == end_vertex:
@@ -396,6 +390,10 @@ def a_star_search(WIN, clock, board, showProcess):
     visited = []
     
     while heap:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+        
         current = heapq.heappop(heap)
         
         if current == endVertex:
@@ -466,7 +464,7 @@ def get_board(drawMaze, WIN, clock):
                 if event.type == pygame.QUIT:
                     pygame.quit()
             
-            draw_at_the_start(board, WIN)
+            main_draw(WIN, board, [], [], True)
             
             # print texts on screen
             if start_pos == None:
