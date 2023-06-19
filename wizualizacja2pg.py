@@ -1,7 +1,6 @@
 from tkinter import *           # pip install tkinter
 import pygame                   # pip install pygame    /   pip install pygame --pre
 from random import shuffle
-from time import sleep
 import pyautogui                # pip install pyautogui
 
 SETTINGS = {}
