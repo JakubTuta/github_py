@@ -86,11 +86,11 @@ def check_collision(snake, apple):
             return 2
     
     if x < 0:
-        snake.snakeParts[0][0] = ROW - 1
+        snake.snakeParts[0][0] = ROW
     elif x >= ROW:
         snake.snakeParts[0][0] = 0
     elif y < 0:
-        snake.snakeParts[0][1] = ROW - 1
+        snake.snakeParts[0][1] = ROW
     elif y >= ROW:
         snake.snakeParts[0][1] = 0
 
