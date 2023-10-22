@@ -1,9 +1,10 @@
 # Program deletes all files/directories in the Downloads folder
 # and clear the trash bin
 
-from sys import platform
-from pathlib import Path
 import os
+from pathlib import Path
+from sys import platform
+
 try:
     import winshell
 except ModuleNotFoundError:

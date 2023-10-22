@@ -10,8 +10,8 @@ response_geo = requests.get(request_url_geo)
 
 if response_geo.status_code == 200:
     data_geo = response_geo.json()
-    lat = data_geo[0]['lat']
-    lon = data_geo[0]['lon']
+    lat = data_geo[0]["lat"]
+    lon = data_geo[0]["lon"]
 else:
     print("ERROR")
 
@@ -20,8 +20,8 @@ response = requests.get(request_url)
 
 if response.status_code == 200:
     data = response.json()
-    weather = data['weather'][0]['description']
-    temp = data['main']['temp']
+    weather = data["weather"][0]["description"]
+    temp = data["main"]["temp"]
     print(f"Pogoda: {weather}")
     print(f"Temperatura: {round(temp - 273.15, 2)}")
 else:
