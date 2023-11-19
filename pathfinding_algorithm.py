@@ -1,10 +1,9 @@
-import heapq
 import os
 import queue
 import tkinter as tk
-from math import sqrt
 from random import choice, choices, randint
 
+import numpy as np
 import pygame
 
 SETTINGS = {}
@@ -62,7 +61,6 @@ class AstarVertex:
         return (self.x, self.y) == (other.x, other.y)
 
     def set_heuristic(self, goal):
-        # self.heuristic = sqrt((self.x - goal.x) ** 2 + (self.y - goal.y) ** 2)
         self.heuristic = abs(self.x - goal.x) + abs(self.y - goal.y)
 
     def get_pos(self):
@@ -378,15 +376,15 @@ def depth_first_search(WIN, clock, board, showProcess):
     end_pos = find_value(board, "X")
 
     visited = []
-    q = []
-    q.append((start_pos, [start_pos]))
+    stack = []
+    stack.append((start_pos, [start_pos]))
 
-    while len(q) > 0:
+    while len(stack) > 0:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
-        current_pos, path = q.pop()
+        current_pos, path = stack.pop()
         if current_pos == end_pos:
             break
         elif current_pos in visited:
@@ -405,7 +403,7 @@ def depth_first_search(WIN, clock, board, showProcess):
 
         for neighbor in neighbors:
             new_path = path + [neighbor]
-            q.append((neighbor, new_path))
+            stack.append((neighbor, new_path))
 
     else:
         main_draw(WIN, board, [], visited)
@@ -496,17 +494,17 @@ def a_star_search(WIN, clock, board, showProcess):
             col.edges = find_edges(board, vertices, col)
             col.set_heuristic(endVertex)
 
-    heap = []
-    heapq.heappush(heap, startVertex)
+    pq = queue.PriorityQueue()
+    pq.put(startVertex)
     path = []
     visited = []
 
-    while heap:
+    while not pq.empty():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
-        current = heapq.heappop(heap)
+        current = pq.get()
 
         if current == endVertex:
             while current:
@@ -529,7 +527,7 @@ def a_star_search(WIN, clock, board, showProcess):
                 edge.distance = cost
                 edge.parent = current
                 edge.heuristic = heuristic
-                heapq.heappush(heap, edge)
+                pq.put(edge)
 
     else:
         main_draw(WIN, board, [], visited)
